@@ -1,0 +1,18 @@
+{{ define "index" }}
+
+{{ template "_head" }}
+
+<body>
+    <div class="container mt-5">
+        <form action="http://localhost:8000/upload" method="POST" enctype="multipart/form-data">
+            <h1 class="text-center">IMPORTAR TRANSAÇÕES</h1>
+            <div class="mb-3">
+                <input class="form-control form-control-sm" id="transaction_file" name="transaction_file" type="file">
+                <label for="transaction_file" class="form-label">Selecione o arquivo para realizar o upload</label>
+            </div>
+            <button type="submit">Importar</button>
+        </form>
+    </div>
+</body>
+
+{{ end }}
