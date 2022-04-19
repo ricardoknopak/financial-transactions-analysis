@@ -1,13 +1,15 @@
 package controllers
 
 import (
-	"bufio"
+	"encoding/csv"
 	"fmt"
 	"html/template"
 	"io"
 	"net/http"
 	"os"
-	"strings"
+	"strconv"
+
+	"github.com/ricardoknopak/financial-transactions-analysis/models"
 )
 
 var temp = template.Must(template.ParseGlob("templates/*.html"))
@@ -17,7 +19,6 @@ func Index(w http.ResponseWriter, r *http.Request) {
 }
 
 func Upload(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("here")
 	r.ParseMultipartForm(10 << 20)
 
 	file, handler, err := r.FormFile("transaction_file")
@@ -26,39 +27,41 @@ func Upload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer file.Close()
-
 	savedFile, err := os.Create(handler.Filename)
 	defer savedFile.Close()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
 	if _, err := io.Copy(savedFile, file); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	fmt.Println("Worked!")
-	readFile(handler.Filename)
+	ReadCsv(handler.Filename)
 }
 
-func readFile(filename string) []string {
-	var reading []string
-
-	file, err := os.Open(filename)
+func ReadCsv(filename string) {
+	csvFile, err := os.Open(filename)
 	if err != nil {
-		fmt.Println("Ocorreu um erro:", err)
+		fmt.Println(err)
 	}
-	reader := bufio.NewReader(file)
-	for {
-		line, err := reader.ReadString('\n')
-		line = strings.TrimSpace(line)
-		reading = append(reading, line)
-		if err == io.EOF {
-			break
+	defer csvFile.Close()
+
+	csvLines, err := csv.NewReader(csvFile).ReadAll()
+	if err != nil {
+		fmt.Println(err)
+	}
+	for _, line := range csvLines {
+		valorTransacao, _ := strconv.ParseFloat(line[6], 64)
+		transactions := models.Transactions{
+			BancoOrigem:    line[0],
+			AgenciaOrigem:  line[1],
+			ContaOrigem:    line[2],
+			BancoDestino:   line[3],
+			AgenciaDestino: line[4],
+			ContaDestino:   line[5],
+			ValorTransacao: valorTransacao,
 		}
+		fmt.Println(transactions.BancoOrigem + " " + transactions.AgenciaOrigem + " " + transactions.ContaOrigem + " " + transactions.BancoDestino + " " + transactions.AgenciaDestino + " " + transactions.ContaDestino + " ")
 	}
-	file.Close()
-	fmt.Println(reading)
-	return reading
 }
