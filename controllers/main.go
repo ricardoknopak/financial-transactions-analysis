@@ -3,45 +3,33 @@ package controllers
 import (
 	"encoding/csv"
 	"fmt"
-	"html/template"
-	"io"
 	"net/http"
 	"os"
 	"strconv"
 
+	"github.com/gin-gonic/gin"
 	"github.com/ricardoknopak/financial-transactions-analysis/models"
 )
 
-var temp = template.Must(template.ParseGlob("templates/*.html"))
-
-func Index(w http.ResponseWriter, r *http.Request) {
-	temp.ExecuteTemplate(w, "index", nil)
+func Index(c *gin.Context) {
+	c.HTML(http.StatusOK, "index.html", nil)
 }
 
-func Upload(w http.ResponseWriter, r *http.Request) {
-	r.ParseMultipartForm(10 << 20)
-
-	file, handler, err := r.FormFile("transaction_file")
-	if err != nil {
-		fmt.Println(err.Error())
+func Upload(c *gin.Context) {
+	file, error := c.FormFile("transaction_file")
+	if error != nil {
+		fmt.Println(error.Error())
 		return
 	}
-	defer file.Close()
-	savedFile, err := os.Create(handler.Filename)
-	defer savedFile.Close()
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	if _, err := io.Copy(savedFile, file); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	ReadCsv(handler.Filename)
+	c.SaveUploadedFile(file, "uploads/"+file.Filename)
+	ReadCsv(file.Filename)
+	c.HTML(http.StatusOK, "upload.html", gin.H{
+		"Upload_result": "uploaded file: " + file.Filename,
+	})
 }
 
 func ReadCsv(filename string) {
-	csvFile, err := os.Open(filename)
+	csvFile, err := os.Open("uploads/" + filename)
 	if err != nil {
 		fmt.Println(err)
 	}
