@@ -1,12 +1,17 @@
 package routes
 
 import (
-	"net/http"
-
+	"github.com/gin-gonic/gin"
 	"github.com/ricardoknopak/financial-transactions-analysis/controllers"
 )
 
-func LoadRoutes() {
-	http.HandleFunc("/", controllers.Index)
-	http.HandleFunc("/upload", controllers.Upload)
+func HandleRequest() {
+	router := gin.Default()
+	router.LoadHTMLGlob("templates/*")
+	router.Static("/assets", "./assets")
+	router.GET("/", controllers.Index)
+
+	router.MaxMultipartMemory = 8 << 20
+	router.POST("/upload", controllers.Upload)
+	router.Run()
 }
